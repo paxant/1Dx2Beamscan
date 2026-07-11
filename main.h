@@ -1,73 +1,62 @@
-#include "stdio.h"
-#include "string.h"
-#include "stdlib.h"
-#include "math.h"
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <sched.h>
-
-// Переменные для определения времени расчета
-clock_t start, end;
-double cpu_time_used;
-
-//  В будующем может, когда будет из этого делаться модуль или драйвер для расчета
-typedef enum
-{
-    UNKNOWN_ERROR = 0,
-    OVER_CALCULATION = 1,
-    PARAMS_IS_MISSING = 2,
-    START = 4,
-} StateMath;
-
-// Структура для комплексного числа
-
-typedef struct
-{
-    double re;
-    double im;
-} complex_t;
+#include <linux/init.h> /* Необходим для макросов */
+#include <linux/moduleparam.h>
+#include <linux/stat.h>
+#include <linux/version.h>
+#include <linux/fs.h>
+#include <linux/file.h>
+#include <linux/uaccess.h>
+#include <linux/slab.h>
+#include <linux/kmod.h>
+#include <linux/fcntl.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/fs.h>
+#include <linux/kernel.h> /* необходим для pr_info() */
+#include <linux/module.h> /* необходим для всех модулей */
 
 
-// Инициализация Массивов для расчета
+#define BUF_SIZE 4096
+#define SCALE 1000
 
-complex_t SinSingal[NUMBER_SIGNALS][SNAPSHOTS];
 
-complex_t V[NUMBER_X * NUMBER_Y][NUMBER_SIGNALS];
-
-complex_t SignalArray[NUMBER_SIGNALS][NUMBER_X * NUMBER_Y];
-complex_t Rxx_ux[NUMBER_X][NUMBER_X];
-complex_t Rxx_uy[NUMBER_Y][NUMBER_Y];
-complex_t Vnm_x[NUMBER_X][THETTA_NUMBER_POINT];
-complex_t Vnm_y[NUMBER_Y][PHI_NUMBER_POINT];
-complex_t BEAMscan_x[THETTA_NUMBER_POINT]; // одномерный спектр по theta
-complex_t BEAMscan_y[PHI_NUMBER_POINT];    // одномерный спектр по phi
-
-complex_t DigrArray[PHI_NUMBER_POINT][THETTA_NUMBER_POINT][NUMBER_Y][NUMBER_X];
-complex_t Rxx[NUMBER_X * NUMBER_Y][NUMBER_X * NUMBER_Y];
-complex_t BEAMscan[PHI_NUMBER_POINT][THETTA_NUMBER_POINT]; // сохраняем комплекс
-
-float Thetta_range[THETTA_NUMBER_POINT];
-float Phi_range[PHI_NUMBER_POINT];   
-
-// переменные для потокового распределения
-
-#ifdef MULTI_THREADING
-    pthread_t thread1, thread2;
-    pthread_attr_t attr1, attr2;
-    struct sched_param param1, param2;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#define HAVE_PROC_OPS
 #endif
 
-// Основные функции
-void InitSimulationSignal();
-void computing_Rxx1D();
-void computing_Rxx2D();
-void InitScanScaleZone();
-void Init_2DArrayPattern();
-void Init_1DArrayPattern();
-void compute_BEAMscan_2D();
-void compute_BEAMscan_1D();
-void plot_BEAMscan_y();
-void plot_BEAMscan_x();
-void plot_BEAMscan_2D();
-void print_mem_usage();
+struct Estimation
+{
+    s64 dx;
+    s64 dy;
+    s64 Tx;
+    s64 Ty;
+    s64 Tx_min;
+    s64 Tx_max;
+    s64 Ty_min;
+    s64 Ty_max;
+    int Nx;
+    int Ny;
+    int Antenna[NUMBER_X][NUMBER_Y];
+};
+
+struct Modeling 
+{
+    char SNR[32];
+    s64 T_start;
+    s64 T_step; 
+    s64 T_end;
+    s64 TimeSimul[255];
+    int N_Signal;
+    s64 F[64];
+    s64 x[64];
+    s64 y[64];
+    s64 A[64];
+};
+
+struct BeamscanData {
+    struct Estimation estimation;
+    struct Modeling modeling;
+};
+
+// чтение файла конфигураций
+int read_params_from_file(const char *filename);
+int read_array_from_file(const char *filename);
