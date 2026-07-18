@@ -1,0 +1,295 @@
+clear all; clc; close all;
+
+
+
+
+%% Параметры
+Nx = 5; Ny = 6; % Размеры антенной решётки
+t = 0:0.001:0; % Временная шкала
+SignalFreq = [ 20 20 ]; % Частота сигнала (Гц)
+Ampl = [ 1 1 ] ; % Амплитуда
+Targets_x = [ -10 24.75 ];
+Targets_y = [ -30 4.75]; %4.75 ];
+% Координаты прихода сигнала
+Targets_phi = Targets_y/100;
+Targets_theta = Targets_x/100;
+
+%Targets_theta = [-0.55,  -0.428, -0.306, -0.183, -0.061, 0.061, 0.183, 0.306, 0.428, 0.55];
+%Targets_phi   = [-0.55, -0.428,  -0.306, -0.183, -0.061, 0.061, 0.183, 0.306, 0.428, 0.55];
+
+theta_range = -60:0.5:60; % Угол θ, градусы (101 точка)
+phi_range = -60:0.5:60; % Угол φ, градусы (101 точка)
+
+%%
+% Формирование сигнала
+for k = 1:length(SignalFreq)
+
+    for tt = 1:length(t)
+        Signal(k, tt) = Ampl(k) * exp(1j * 2 * pi * SignalFreq(k) * t(tt));
+    end
+end
+
+fid = fopen('/tmp/signals.csv','r');
+
+C = textscan(fid,'%s','Delimiter','\n');
+fclose(fid);
+
+lines = C{1};
+
+m = length(lines);
+n = numel(split(lines{1},sprintf('\t')));
+
+z = zeros(m,n);
+
+for i = 1:m
+    vals = split(lines{i},sprintf('\t'));
+    for j = 1:n
+        z(i,j) = str2num(vals{j}); %#ok<ST2NM>
+    end
+end
+
+for k = 1:length(SignalFreq)
+    for tt = 1:length(t)
+        if round(real(Signal(k,tt)),3) ~= round(real(z(k,tt)),3) || ...
+   round(imag(Signal(k,tt)),3) ~= round(imag(z(k,tt)),3)
+            fprintf('Ошибка в сигнале %d на отсчёте %d\n', k, tt);
+        end
+    end
+end
+
+
+data = readcell('/tmp/V.csv', 'Delimiter', '\t');
+
+[m,n] = size(data);
+V_c = zeros(m,n);
+
+for i = 1:m
+    for j = 1:n
+        
+        if isempty(data{i,j})
+            V_c(i,j) = 0;
+            continue;
+        end
+        
+        if isnumeric(data{i,j})
+            V_c(i,j) = data{i,j};
+        else
+            str = erase(string(data{i,j}), " ");
+            V_c(i,j) = str2num(str); %#ok<ST2NM>
+        end
+        
+    end
+end
+
+% Формирование направляющей матрицы для целевого сигнала с использованием угловых координат
+for k = 1:length(SignalFreq)
+    index_matrix = 1;
+
+    for m = 0:Ny - 1
+
+        for n = 0:Nx - 1
+            V(index_matrix, k) = exp(1j * (n - (Nx - 1) / 2) * Targets_theta(k) * pi) * ...
+                exp(1j * (m - (Ny - 1) / 2) * Targets_phi(k) * pi);
+            index_matrix = index_matrix + 1;
+        end
+    end
+end
+
+
+% Округляем до 3 знаков после запятой
+V_c_round = round(V_c, 3);
+V_round   = round(V, 3);
+
+% Сравниваем
+[m_check, n_check] = size(V_c_round);
+for i = 1:m_check
+    for j = 1:n_check
+        if V_c_round(i,j) ~= V_round(i,j)
+            fprintf('Различие в элементе (%d,%d): CSV = %f + %fi, Расчет = %f + %fi\n', ...
+                i,j, real(V_c(i,j)), imag(V_c(i,j)), real(V(i,j)), imag(V(i,j)));
+        end
+    end
+end
+
+% Формирование измеренной матрицы (без учета шума для простоты)
+B = Signal.' * V.';
+
+data = readcell('/tmp/SignalArray.csv','Delimiter','\t');
+
+[m,n] = size(data);
+B_c = complex(zeros(m,n));
+
+for i = 1:m
+    for j = 1:n
+        if isnumeric(data{i,j})
+            B_c(i,j) = data{i,j};
+        else
+            B_c(i,j) = str2num(erase(string(data{i,j})," ")); %#ok<ST2NM>
+        end
+    end
+end
+
+[row,col] = find(abs(B-B_c)>1e-12);
+
+for k=1:length(row)
+    fprintf("(%d,%d): MATLAB=%g%+gi  C=%g%+gi\n",...
+        row(k),col(k),...
+        real(B(row(k),col(k))),imag(B(row(k),col(k))),...
+        real(B_c(row(k),col(k))),imag(B_c(row(k),col(k))));
+end
+
+
+% Расчет ковариационных матриц
+Rxx_ux = zeros(Nx, Nx);
+Rxx_uy = zeros(Ny, Ny);
+
+for k = 1:length(t)
+    Snapshot = reshape(B(k,:), [Nx, Ny]);
+    Rxx_ux = Rxx_ux + Snapshot * Snapshot';
+    Rxx_uy = Rxx_uy + Snapshot' * Snapshot;
+end
+
+Rxx_ux = Rxx_ux / length(t) / Nx; % Нормализация по количеству временных отсчетов
+Rxx_uy = Rxx_uy / length(t) / Ny;
+
+%% Считываем Rxx_ux из CSV
+data = readcell('/tmp/Rxx_ux.csv', 'Delimiter','\t');
+
+[m,n] = size(data);
+Rxx_ux_c = zeros(m,n);
+
+for i = 1:m
+    for j = 1:n
+        
+        if isempty(data{i,j})
+            Rxx_ux_c(i,j) = 0;
+            
+        elseif isnumeric(data{i,j})
+            Rxx_ux_c(i,j) = data{i,j};
+            
+        else
+            str = erase(string(data{i,j}), " ");
+            Rxx_ux_c(i,j) = str2num(str); %#ok<ST2NM>
+        end
+    end
+end
+
+%% Сравниваем с расчетом MATLAB
+for i = 1:Nx
+    for j = 1:Nx
+        if abs(Rxx_ux_c(i,j) - Rxx_ux(i,j)) > 1e-6
+            fprintf('Различие в Rxx_ux(%d,%d): CSV = %f + %fi, MATLAB = %f + %fi\n', ...
+                i,j, real(Rxx_ux_c(i,j)), imag(Rxx_ux_c(i,j)), real(Rxx_ux(i,j)), imag(Rxx_ux(i,j)));
+        end
+    end
+end
+
+%% Считываем Rxx_uy из CSV
+data = readcell('/tmp/Rxx_uy.csv', 'Delimiter','\t');
+
+[m,n] = size(data);
+Rxx_uy_c = zeros(m,n);
+
+for i = 1:m
+    for j = 1:n
+        
+        if isempty(data{i,j})
+            Rxx_uy_c(i,j) = 0;
+            
+        elseif isnumeric(data{i,j})
+            Rxx_uy_c(i,j) = data{i,j};
+            
+        else
+            str = erase(string(data{i,j}), " ");
+            Rxx_uy_c(i,j) = str2num(str); %#ok<ST2NM>
+        end
+        
+    end
+end
+
+%% Сравниваем с расчетом MATLAB
+for i = 1:Ny
+    for j = 1:Ny
+        if abs(Rxx_uy_c(i,j) - Rxx_uy(i,j)) > 1e-6
+            fprintf('Различие в Rxx_uy(%d,%d): CSV = %f + %fi, MATLAB = %f + %fi\n', ...
+                i,j, real(Rxx_uy_c(i,j)), imag(Rxx_uy_c(i,j)), real(Rxx_uy(i,j)), imag(Rxx_uy(i,j)));
+        end
+    end
+end
+
+BEAMscan_x = zeros(length(theta_range), 1);
+
+for i = 1:length(theta_range)
+    for n = 0:Nx-1
+        phase_n = (n - (Nx-1)/2);
+        Vnm_x(n+1,1) = exp(1j * phase_n * theta_range(i)/100 * pi); % Вектор направленности
+    end
+    BEAMscan_x(i) = Vnm_x' * Rxx_ux * Vnm_x; % Расчет спектра
+end
+
+
+% Поиск одномерного спектра для psi_y
+BEAMscan_y = zeros(length(phi_range), 1);
+
+for j = 1:length(phi_range)
+     for m = 0:Ny-1
+        phase_m = (m - (Ny-1)/2);
+        Vnm_y(m+1,1) = exp(1j * phase_m * phi_range(j)/100 * pi); % Вектор направленности
+    end
+    BEAMscan_y(j) = Vnm_y' * Rxx_uy * Vnm_y; % Расчет спектра
+end
+
+%% === Считываем CSV, сгенерированные C-кодом ===
+data_x = readcell('/tmp/BEAMscan_x.csv','Delimiter','\t');
+data_y = readcell('/tmp/BEAMscan_y.csv','Delimiter','\t');
+
+BEAMscan_x_csv = zeros(numel(data_x),1);
+
+for i = 1:numel(data_x)
+
+    if isnumeric(data_x{i})
+        BEAMscan_x_csv(i) = data_x{i};
+
+    else
+        str = erase(string(data_x{i}), " ");
+        BEAMscan_x_csv(i) = str2num(str); %#ok<ST2NM>
+    end
+
+end
+
+
+BEAMscan_y_csv = zeros(numel(data_y),1);
+
+for i = 1:numel(data_y)
+
+    if isnumeric(data_y{i})
+        BEAMscan_y_csv(i) = data_y{i};
+
+    else
+        str = erase(string(data_y{i}), " ");
+        BEAMscan_y_csv(i) = str2num(str); %#ok<ST2NM>
+    end
+
+end
+BEAMscan_x_csv = abs(BEAMscan_x_csv) / max(abs(BEAMscan_x_csv(:)));
+BEAMscan_y_csv = abs(BEAMscan_y_csv) / max(abs(BEAMscan_y_csv(:)));
+BEAMscan_x = abs(BEAMscan_x) / max(abs(BEAMscan_x(:)));
+BEAMscan_y = abs(BEAMscan_y) / max(abs(BEAMscan_y(:)));
+%% === Сравнение до третьего знака ===
+for i = 1:length(theta_range)
+    csv_val = round(BEAMscan_x_csv(i),3);
+    mat_val = round(BEAMscan_x(i),3);
+    if csv_val ~= mat_val
+        fprintf('Различие в BEAMscan_x(%d): CSV = %0.3f + %0.3fi, MATLAB = %0.3f + %0.3fi\n', ...
+            i, real(csv_val), imag(csv_val), real(mat_val), imag(mat_val));
+    end
+end
+
+for j = 1:length(phi_range)
+    csv_val = round(BEAMscan_y_csv(j),3);
+    mat_val = round(BEAMscan_y(j),3);
+    if csv_val ~= mat_val
+        fprintf('Различие в BEAMscan_y(%d): CSV = %0.3f + %0.3fi, MATLAB = %0.3f + %0.3fi\n', ...
+            j, real(csv_val), imag(csv_val), real(mat_val), imag(mat_val));
+    end
+end

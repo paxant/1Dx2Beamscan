@@ -17,10 +17,10 @@ void copyStruct(const struct BeamscanData *src)
 {
     int i, j;
 
-    datad.estimation.dx     = (double)src->estimation.dx / 1000.0;
-    datad.estimation.dy     = (double)src->estimation.dy / 1000.0;
-    datad.estimation.Tx     = (double)src->estimation.Tx / 1000.0;
-    datad.estimation.Ty     = (double)src->estimation.Ty / 1000.0;
+    datad.estimation.dx = (double)src->estimation.dx / 1000.0;
+    datad.estimation.dy = (double)src->estimation.dy / 1000.0;
+    datad.estimation.Tx = (double)src->estimation.Tx / 1000.0;
+    datad.estimation.Ty = (double)src->estimation.Ty / 1000.0;
 
     datad.estimation.Tx_min = (double)src->estimation.Tx_min / 1000.0;
     datad.estimation.Tx_max = (double)src->estimation.Tx_max / 1000.0;
@@ -40,8 +40,8 @@ void copyStruct(const struct BeamscanData *src)
            sizeof(datad.modeling.SNR));
 
     datad.modeling.T_start = (double)src->modeling.T_start / 1000.0;
-    datad.modeling.T_step  = (double)src->modeling.T_step  / 1000.0;
-    datad.modeling.T_end   = (double)src->modeling.T_end   / 1000.0;
+    datad.modeling.T_step = (double)src->modeling.T_step / 1000.0;
+    datad.modeling.T_end = (double)src->modeling.T_end / 1000.0;
 
     datad.modeling.N_Signal = src->modeling.N_Signal;
 
@@ -49,7 +49,8 @@ void copyStruct(const struct BeamscanData *src)
         datad.modeling.TimeSimul[i] =
             (double)src->modeling.TimeSimul[i] / 1000.0;
 
-    for (i = 0; i < 64; i++) {
+    for (i = 0; i < 64; i++)
+    {
         datad.modeling.F[i] = (double)src->modeling.F[i] / 1000.0;
         datad.modeling.x[i] = (double)src->modeling.x[i] / 1000.0;
         datad.modeling.y[i] = (double)src->modeling.y[i] / 1000.0;
@@ -59,7 +60,7 @@ void copyStruct(const struct BeamscanData *src)
 
 void printStruct(const struct BeamscanData_double *d)
 {
-    
+
     int i, j;
 
     printf("\n=========== Modeling ============\n");
@@ -92,9 +93,8 @@ void printStruct(const struct BeamscanData_double *d)
         printf("[%2d] %.3f\n", i, d->modeling.A[i]);
 }
 
-
 int main(int argc, char *argv[])
-{   
+{
     bool D1 = false;
     bool D2 = false;
     bool Model = false;
@@ -110,28 +110,32 @@ int main(int argc, char *argv[])
             D2 = true;
         else if (strcmp(argv[i], "MODEL") == 0)
             Model = true;
-        else{
+        else
+        {
             printf("Пустые аргументы");
             return 0;
         }
     }
-    
+
     fd = open("/dev/beamscan", O_RDONLY);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         perror("open");
         return 1;
     }
     n = read(fd, &data, sizeof(data));
-    if (n < 0) {
+    if (n < 0)
+    {
         perror("read");
         return 1;
     }
 
-    if (n != sizeof(data)) {
+    if (n != sizeof(data))
+    {
         printf("partial read: %zd bytes\n", n);
     }
     printf("n = %zd\n", n);
-    
+
     close(fd);
 
     copyStruct(&data);
@@ -141,7 +145,6 @@ int main(int argc, char *argv[])
     // Моделируем сигнал плоского фронта электромагнитной волны
     InitSimulationSignal();
 
-    
     return 0;
 }
 
@@ -163,7 +166,7 @@ int main(int argc, char *argv[])
  * завершению программы или утечкам ресурсов.
  */
 void InitSimulationSignal()
-{   
+{
 
     printf("\nРасчет модели сигнала\n");
     int counter = 0;
@@ -183,27 +186,28 @@ void InitSimulationSignal()
 
 #ifdef DEBUG_OUT_MATRIX_CSV
 
-        FILE *f = fopen("/tmp/signals.csv", "w");
-        if (!f){
-            return 1;
-            printf("Не удалось открыть файл");
-        }
+    FILE *f = fopen("/tmp/signals.csv", "w");
+    if (!f)
+    {
+        return 1;
+        printf("Не удалось открыть файл");
+    }
 
-        for (int i = 0; i < datad.modeling.N_Signal; i++)
+    for (int i = 0; i < datad.modeling.N_Signal; i++)
+    {
+        for (int j = 0; j <= TIME_NUMBER_STEPS; j++)
         {
-            for (int j = 0; j <= TIME_NUMBER_STEPS; j++)
-            {
-                fprintf(f, "%.15f%+.15fi",
-                        creal(SinSignal[i][j]),
-                        cimag(SinSignal[i][j]));
+            fprintf(f, "%.15f%+.15fi",
+                    creal(SinSignal[i][j]),
+                    cimag(SinSignal[i][j]));
 
-                if (j < TIME_NUMBER_STEPS)
-                    fputc('\t', f);
-            }
-            fputc('\n', f);
+            if (j < TIME_NUMBER_STEPS)
+                fputc('\t', f);
         }
+        fputc('\n', f);
+    }
 
-        fclose(f);
+    fclose(f);
 #endif
     double complex V[NUMBER_X * NUMBER_Y][NUMBER_SIGNALS];
 
@@ -214,23 +218,18 @@ void InitSimulationSignal()
         for (int ny = 0; ny < datad.estimation.Ny; ny++)
             for (int nx = 0; nx < datad.estimation.Nx; nx++)
             {
-                double angle_y = (ny - (double)(datad.estimation.Ny - 1) / 2.0) * datad.modeling.y[i] / 100.0 * M_PI;
-
-                double angle_x = (nx - (double)(datad.estimation.Nx - 1) / 2.0) * datad.modeling.x[i] / 100.0 * M_PI;
-
-                V[index_matrix][i] = cexp(I * (angle_x + angle_y));
-
-                index_matrix++;
+                V[index_matrix++][i] = cexp(I * (((ny - (double)(datad.estimation.Ny - 1) / 2.0) * datad.modeling.y[i] / 100.0 * M_PI) + (nx - (double)(datad.estimation.Nx - 1) / 2.0) * datad.modeling.x[i] / 100.0 * M_PI));
             }
     }
 
 #ifdef DEBUG_OUT_MATRIX_CSV
 
     FILE *fV = fopen("/tmp/V.csv", "w");
-    if (!f){
-            return 1;
-            printf("Не удалось открыть файл");
-        }
+    if (!fV)
+    {
+        printf("Не удалось открыть файл\n");
+        return 1;
+    }
 
     for (int row = 0; row < M; row++)
     {
@@ -250,37 +249,40 @@ void InitSimulationSignal()
 
 #endif
     int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
-    if (shm_fd == -1) {
+    if (shm_fd == -1)
+    {
         perror("shm_open");
         return;
     }
 
-    if (ftruncate(shm_fd, sizeof(SharedSignalArray)) == -1) {
+    if (ftruncate(shm_fd, sizeof(SharedSignalArray)) == -1)
+    {
         perror("ftruncate");
         close(shm_fd);
         return;
     }
 
     SharedSignalArray *shm = mmap(NULL,
-                                sizeof(SharedSignalArray),
-                                PROT_READ | PROT_WRITE,
-                                MAP_SHARED,
-                                shm_fd,
-                                0);
+                                  sizeof(SharedSignalArray),
+                                  PROT_READ | PROT_WRITE,
+                                  MAP_SHARED,
+                                  shm_fd,
+                                  0);
 
-    if (shm == MAP_FAILED) {
+    if (shm == MAP_FAILED)
+    {
         perror("mmap");
         close(shm_fd);
         return;
     }
 
-    for (int t = 0; t < T; t++)              // по времени
+    for (int t = 0; t < T; t++) // по времени
     {
-        for (int m = 0; m < datad.estimation.Nx * datad.estimation.Ny; m++)    // по элементам решётки
+        for (int m = 0; m < datad.estimation.Nx * datad.estimation.Ny; m++) // по элементам решётки
         {
-            double complex sum = 0.0 + 0.0*I;
+            double complex sum = 0.0 + 0.0 * I;
 
-            for (int s = 0; s < datad.modeling.N_Signal; s++)   // по сигналам
+            for (int s = 0; s < datad.modeling.N_Signal; s++) // по сигналам
             {
                 sum += V[m][s] * SinSignal[s][t];
             }
@@ -291,7 +293,8 @@ void InitSimulationSignal()
 #ifdef DEBUG_OUT_MATRIX_CSV
 
     FILE *fSA = fopen("/tmp/SignalArray.csv", "w");
-    if (!fSA) {
+    if (!fSA)
+    {
         perror("fopen");
         return 1;
     }

@@ -32,8 +32,8 @@ DEFS := \
 	$(if $(filter y,$(GRAFICS)),-DGRAFICS,) \
 	-DTHETTA_NUMBER_POINT=241 \
 	-DPHI_NUMBER_POINT=241 \
-	-DNUMBER_X=24 \
-	-DNUMBER_Y=24 \
+	-DNUMBER_X=5 \
+	-DNUMBER_Y=6 \
 	-DNUMBER_SIGNALS=2 \
 	-DSNAPSHOTS=6 \
 	-DNUMB_CONTER_FOR=1 \
@@ -44,6 +44,7 @@ ccflags-y := -Wall -Wextra $(DEFS)
 # ---------------- Targets ----------------
 
 module:
+	sudo apt install libopenblas-dev
 	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 user: $(USER_APP)

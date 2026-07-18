@@ -7,11 +7,10 @@
 #include "shared_memory.h"
 #include "math.h"
 #define TIME_NUMBER_STEPS (int)((datad.modeling.T_end - datad.modeling.T_start) / datad.modeling.T_step)
+
 float Thetta_range[THETTA_NUMBER_POINT];
 float Phi_range[PHI_NUMBER_POINT];
-double complex SinSignal[NUMBER_SIGNALS][SNAPSHOTS];
 double complex V[NUMBER_X * NUMBER_Y][NUMBER_SIGNALS];
-double complex SignalArray[SNAPSHOTS][NUMBER_X * NUMBER_Y];
 double complex Rxx_ux[NUMBER_X][NUMBER_X];
 double complex Rxx_uy[NUMBER_Y][NUMBER_Y];
 double complex Rxx[NUMBER_X * NUMBER_Y][NUMBER_X * NUMBER_Y];
@@ -51,8 +50,8 @@ void copyStruct(const struct BeamscanData *src)
     datad.estimation.Nx = src->estimation.Nx;
     datad.estimation.Ny = src->estimation.Ny;
 
-    for (i = 0; i < NUMBER_X; i++)
-        for (j = 0; j < NUMBER_Y; j++)
+    for (i = 0; i < datad.estimation.Nx; i++)
+        for (j = 0; j < datad.estimation.Ny; j++)
             datad.estimation.Antenna[i][j] =
                 src->estimation.Antenna[i][j];
 
@@ -70,7 +69,7 @@ void copyStruct(const struct BeamscanData *src)
         datad.modeling.TimeSimul[i] =
             (double)src->modeling.TimeSimul[i] / 1000.0;
 
-    for (i = 0; i < 64; i++)
+    for (i = 0; i < datad.modeling.N_Signal; i++)
     {
         datad.modeling.F[i] = (double)src->modeling.F[i] / 1000.0;
         datad.modeling.x[i] = (double)src->modeling.x[i] / 1000.0;
@@ -220,24 +219,29 @@ int main(int argc, char *argv[])
 void computing_Rxx1D()
 {
 
-    // Обнуляем матрицы
-    // for (int i = 0; i < Nx; i++)
-    //    for (int j = 0; j < Nx; j++) {
-    //        Rxx_ux[i][j].re = 0.0;
-    //        Rxx_ux[i][j].im = 0.0;
-    //    }
-
-    // for (int i = 0; i < Ny; i++)
-    //     for (int j = 0; j < Ny; j++) {
-    //         Rxx_uy[i][j].re = 0.0;
-    //         Rxx_uy[i][j].im = 0.0;
-    //     }
+/*  
+    for (int i = 0; i < 10; i++)
+    {
+  
+        printf("%2d %.12f%+.12fi\n", i, creal(shm->SignalArray[0][i]), cimag(shm->SignalArray[0][i]));
+    }
+*/
 
     int Nx = datad.estimation.Nx;
     int Ny = datad.estimation.Ny;
 
-    double complex Rxx_ux[NUMBER_X][NUMBER_X] = {0};
-    double complex Rxx_uy[NUMBER_Y][NUMBER_Y] = {0};
+#ifdef CLEAR_MATRIX
+    // Обнуляем матрицы
+    for (int i = 0; i < Nx; i++)
+        for (int j = 0; j < Nx; j++) {
+           Rxx_ux[i][j] = 0.0 + 0.0 * I;
+        }
+
+     for (int i = 0; i < Ny; i++)
+        for (int j = 0; j < Ny; j++) {
+             Rxx_uy[i][j] = 0.0 + 0.0 * I;
+        }
+#endif
 
     // Основной цикл по времени
     for (int t = 0; t < T; t++)
@@ -255,7 +259,7 @@ void computing_Rxx1D()
                     double complex v1 = shm->SignalArray[t][y * Nx + x1];
                     double complex v2 = shm->SignalArray[t][y * Nx + x2];
 
-                    sum += v1 * conj(v2);
+                    sum += (v1) * conj(v2);
                 }
 
                 Rxx_ux[x1][x2] += sum;
@@ -282,6 +286,22 @@ void computing_Rxx1D()
             }
         }
     }
+
+#if 0
+    // Нормировка
+    double normX = (double)(T * Nx);
+    double normY = (double)(T * Ny);
+
+    for (int i = 0; i < Nx; i++)
+        for (int j = 0; j < Nx; j++) {
+            Rxx_ux[i][j] /= normX;
+        }
+
+    for (int i = 0; i < Ny; i++)
+        for (int j = 0; j < Ny; j++) {
+            Rxx_uy[i][j] /= normY;
+        }
+#endif
 
 #ifdef DEBUG_OUT_MATRIX_CSV
 
@@ -624,16 +644,20 @@ void Init_1DArrayPattern(void)
         return;
     }
 
+    for (int ny = 0; ny < Ny; ny++)
+{
     for (int it = 0; it < lenPhi; it++)
     {
-        for (int ny = 0; ny < Ny; ny++)
-        {
-            fprintf(fy,
-                    "%.15f%+.15fi\n",
-                    creal(Vnm_y[ny][it]),
-                    cimag(Vnm_y[ny][it]));
-        }
+        fprintf(fy,
+                "%.15f%+.15fi",
+                creal(Vnm_y[ny][it]),
+                cimag(Vnm_y[ny][it]));
+
+        if (it < lenPhi - 1)
+            fputc('\t', fy);
     }
+    fputc('\n', fy);
+}
 
     fclose(fy);
 
