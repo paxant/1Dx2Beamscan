@@ -22,6 +22,7 @@ $(USER_MODEL_APP): $(USER_MODEL_SRCS)
 # ---------------- Kernel ----------------
 
 DEBUG_OUT_MATRIX_CSV ?= y
+GRAFICS ?= y
 
 DEFS := \
 	$(if $(filter y,$(DEBUG_OUT_MESSAGE)),-DDEBUG_OUT_MESSAGE,) \

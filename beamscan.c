@@ -32,6 +32,9 @@ void Init_1DArrayPattern();
 void Init_2DArrayPattern();
 void compute_BEAMscan_2D();
 void compute_BEAMscan_1D();
+void plot_BEAMscan_x();
+void plot_BEAMscan_y();
+void plot_BEAMscan_2D();
 
 void copyStruct(const struct BeamscanData *src)
 {
@@ -183,12 +186,20 @@ int main(int argc, char *argv[])
             Init_1DArrayPattern();
             computing_Rxx1D();
             compute_BEAMscan_1D();
+#ifdef GRAFICS
+            plot_BEAMscan_x();
+            plot_BEAMscan_y();
+#endif
         }
         if (D2)
         {
             Init_2DArrayPattern();
             computing_Rxx2D();
             compute_BEAMscan_2D();
+#ifdef GRAFICS
+            plot_BEAMscan_2D();
+#endif
+
             // perror("Нет реализации 2D пространтвенного спектра");
         }
         // shm->ready = 0;
@@ -490,12 +501,10 @@ void Init_2DArrayPattern(void)
     int Ny = datad.estimation.Ny;
 
     int lenTheta = (datad.estimation.Tx_max - datad.estimation.Tx_min) /
-                       datad.estimation.Tx +
-                   1;
+                       datad.estimation.Tx + 1;
 
     int lenPhi = (datad.estimation.Ty_max - datad.estimation.Ty_min) /
-                     datad.estimation.Ty +
-                 1;
+                     datad.estimation.Ty + 1;
 
     for (int i = 0; i < lenTheta; i++)
     {
@@ -882,3 +891,182 @@ void compute_BEAMscan_1D(void)
 
 #endif
 }
+
+
+#ifdef GRAFICS
+
+/**
+ * @brief Строит график диаграммы направленности при сканировании по оси Y.
+ *
+ * @details
+ * Функция визуализирует результаты двумерного или одномерного сканирования
+ * луча антенной решётки в направлении оси Y. Обычно отображает зависимость
+ * усиления (или нормированной мощности) от угла отклонения.
+ * Используется для анализа характеристик диаграммы направленности:
+ * ширины главного лепестка, уровня боковых лепестков, положения максимума.
+ *
+ * @note
+ * Перед вызовом должны быть рассчитаны данные сканирования
+ * (см. compute_BEAMscan_1D() или compute_BEAMscan_2D()).
+ *
+ * @warning
+ * Если данные для оси Y не были предварительно вычислены или массив
+ * результатов не инициализирован, функция построит некорректный график
+ * либо вызовет ошибку доступа к памяти.
+ *
+ * @see plot_BEAMscan_x(), compute_BEAMscan_1D(), compute_BEAMscan_2D()
+ */
+void plot_BEAMscan_y()
+{
+    int lenPhi = (datad.estimation.Ty_max - datad.estimation.Ty_min) /
+                     datad.estimation.Ty + 1;
+
+    double maxMag = 0.0;
+    for (int j = 0; j < lenPhi; j++) {
+        double mag = cabs(BEAMscan_y[j]);
+        if (mag > maxMag) maxMag = mag;
+    }
+
+    FILE *f = fopen("beam_y.dat", "w");
+    for (int j = 0; j < lenPhi; j++)
+    {
+        double mag = 10 * log10(BEAMscan_y[j]/ maxMag)  ;
+        fprintf(f, "%f %f\n", Phi_range[j], mag);
+    }
+    fclose(f);
+
+    // создаем скрипт для gnuplot
+    FILE *gp = popen("gnuplot -persist", "w");
+    if (gp)
+    {
+        fprintf(gp, "set title 'BEAMscan_y'\n");
+        fprintf(gp, "set xlabel 'Phi (градусы)'\n");
+        fprintf(gp, "set ylabel 'Amplitude'\n");
+        fprintf(gp, "plot 'beam_y.dat' with lines title 'BEAMscan_y'\n");
+        fflush(gp);
+        // pclose(gp); // если хочешь закрыть окно автоматически
+    }
+}
+
+/**
+ * @brief Строит график диаграммы направленности при сканировании по оси X.
+ *
+ * @details
+ * Функция визуализирует результаты сканирования луча антенной решётки
+ * в направлении оси X. Отображает зависимость усиления или нормированной
+ * мощности от угла отклонения по горизонтальной оси.
+ * Используется для анализа характеристик диаграммы направленности:
+ * положения главного лепестка, ширины диаграммы, уровней боковых лепестков
+ * и симметрии распределения.
+ *
+ * @note
+ * Перед вызовом должны быть рассчитаны данные для оси X
+ * (см. compute_BEAMscan_1D() или compute_BEAMscan_2D()).
+ *
+ * @warning
+ * Если массив данных для оси X не инициализирован или повреждён,
+ * построенный график будет некорректным либо произойдёт ошибка доступа к памяти.
+ *
+ * @see plot_BEAMscan_y(), compute_BEAMscan_1D(), compute_BEAMscan_2D()
+ */
+void plot_BEAMscan_x()
+{   
+    
+    int lenTheta = (datad.estimation.Tx_max - datad.estimation.Tx_min) /
+                       datad.estimation.Tx + 1;
+
+    double maxMag = 0.0;
+    for (int j = 0; j < lenTheta; j++) {
+        double mag = cabs(BEAMscan_x[j]);
+        if (mag > maxMag) maxMag = mag;
+    }
+
+    FILE *f = fopen("beam_x.dat", "w");
+    for (int j = 0; j < lenTheta; j++)
+    {
+        double mag = 10 * log10(BEAMscan_x[j]/ maxMag)  ;
+        fprintf(f, "%f %f\n", Thetta_range[j], mag);
+    }
+    fclose(f);
+
+    // скрипт для gnuplot
+    FILE *gp = popen("gnuplot -persist", "w");
+    if (gp)
+    {
+        fprintf(gp, "set title 'BEAMscan_x'\n");
+        fprintf(gp, "set xlabel 'Thetta (градусы)'\n");
+        fprintf(gp, "set ylabel 'Amplitude'\n");
+        fprintf(gp, "plot 'beam_x.dat' with lines title 'BEAMscan_x'\n");
+        fflush(gp);
+        // pclose(gp); // закрыть окно автоматически
+    }
+}
+
+/**
+ * @brief Строит двумерный график диаграммы направленности антенной решётки.
+ *
+ * @details
+ * Функция визуализирует результаты сканирования луча антенной решётки
+ * в двухмерной плоскости (θ и φ). Отображает зависимость амплитуды
+ * (или нормированной мощности) от углового положения по горизонтальной
+ * и вертикальной осям. Используется для анализа характеристик
+ * диаграммы направленности: положения главного лепестка, ширины диаграммы,
+ * уровней боковых лепестков и симметрии распределения.
+ *
+ * @note
+ * Перед вызовом должны быть рассчитаны данные для двумерного сканирования
+ * (см. compute_BEAMscan_2D()). Функция автоматически вычисляет модуль
+ * комплексных значений BEAMscan и нормирует данные.
+ *
+ * @warning
+ * Если массив BEAMscan не инициализирован или повреждён, построенный
+ * график будет некорректным либо произойдёт ошибка доступа к памяти.
+ *
+ * @see plot_BEAMscan_x(), plot_BEAMscan_y(), compute_BEAMscan_2D()
+ */
+
+#if 1
+void plot_BEAMscan_2D()
+{
+    FILE *f = fopen("beam_2D.dat", "w");
+    if (!f)
+    {
+        perror("Cannot open file for 2D plot");
+        return;
+    }
+    int lenPhi = (datad.estimation.Ty_max - datad.estimation.Ty_min) /
+                     datad.estimation.Ty + 1;
+    int lenTheta = (datad.estimation.Tx_max - datad.estimation.Tx_min) /
+                       datad.estimation.Tx + 1;
+    // Записываем данные: theta phi magnitude
+    for (int it = 0; it < lenTheta; ++it)
+    {
+        for (int jp = 0; jp < lenPhi; ++jp)
+        {
+            double mag = creal(BEAMscan[jp][it]);
+            fprintf(f, "%f %f %f\n", Thetta_range[it], Phi_range[jp], mag);
+        }
+        fprintf(f, "\n"); // пустая строка для корректного отображения сетки
+    }
+    fclose(f);
+
+    FILE *gp = popen("gnuplot -persist", "w");
+    if (gp)
+    {
+        fprintf(gp, "set title 'BEAMscan 2D'\n");
+        fprintf(gp, "set xlabel 'Theta (градусы)'\n");
+        fprintf(gp, "set ylabel 'Phi (градусы)'\n");
+        fprintf(gp, "set zlabel 'Amplitude'\n");
+
+        // Цветовая карта "jet" (синяя -> зеленая -> желтая -> красная)
+        fprintf(gp, "set palette defined (0 'blue', 1 'cyan', 2 'green', 3 'yellow', 4 'red')\n");
+        fprintf(gp, "set pm3d map\n");
+        fprintf(gp, "splot 'beam_2D.dat' using 1:2:3 with pm3d notitle\n");
+
+        fflush(gp);
+        // pclose(gp);
+    }
+}
+#endif
+
+#endif

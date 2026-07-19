@@ -166,8 +166,6 @@ for j = 1:length(phi_range)
     end
 end
 
-
-
 BEAMscan =  flip(BEAMscan_x_csv) * BEAMscan_y_csv';
 BEAMscan = 10*log10(BEAMscan);
 BEAMscan(BEAMscan < -60) = -60;
