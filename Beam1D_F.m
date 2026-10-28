@@ -1,59 +1,26 @@
-function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, length_t, phi_range, theta_range)
+function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, t, phi_range, theta_range)
     
-    % V_x = zeros(Nx, 1);
-    % V_y = zeros(Ny, 1);   
-    % 
-    % for j = 1:Nx
-    % 
-    %     % Координата столбца относительно фазового центра
-    %     dx = (j-1) - (Nx-1)/2;
-    % 
-    %     % Фазовый сдвиг столбца к фазовому центру
-    %     shift_phase_x = exp(-1j * pi * dx);
-    %     AAAA = B(:,j);
-    %     % Перенос столбца в фазовый центр и сложение
-    %     V_y = V_y + AAAA .* shift_phase_x;
-    % end
-    % for i = 1:Ny
-    % 
-    %     % Координата строки относительно фазового центра
-    %     dy = (i-1) - (Ny-1)/2;
-    % 
-    %     % Фазовый сдвиг строки к фазовому центру
-    %     shift_phase_y = exp(-1j * pi * dy);
-    %     AAAA = B(i,:);
-    %     % Перенос строки в фазовый центр и сложение
-    %     V_x = V_x + AAAA .* shift_phase_y;
-    % end
-    % 
-    % V_x = V_x.';
-
     %% ---------------------------------------------------------
     % Расчет ковариационных матриц
     % ---------------------------------------------------------
-
+    length_t = length(t);
     %% Рассчитываем корреляционные матрицы
     Rxx_y = zeros(Ny);
     Rxx_x = zeros(Nx);
+    for q = 1:length_t
+        for j = 1:Nx
+            A = B(:, j, q);
+            Rxx_y = Rxx_y + ( A * A' );
+        end
     
-    % Rxx_x = V_x * V_x';
-    % Rxx_y = V_y * V_y';
-    % 
-    % Rxx_ux = Rxx_x / length_t; % Нормализация по количеству временных отсчетов
-    % Rxx_uy = Rxx_y / length_t;
-
-    for j = 1:Nx
-        A = B(:, j);
-        Rxx_y = Rxx_y + ( A * A' );
-    end
-
-    for i = 1:Ny
-        A = B(i, :).';
-        Rxx_x = Rxx_x + ( A * A' );
+        for i = 1:Ny
+            A = rot90(B(i, :, q));
+            Rxx_x = Rxx_x + ( A * A' );
+        end
     end
     
-    Rxx_ux = Rxx_x / length_t / Nx; % Нормализация по количеству временных отсчетов
-    Rxx_uy = Rxx_y / length_t / Ny;
+    Rxx_ux = Rxx_x / length_t / Ny; % Нормализация по количеству временных отсчетов
+    Rxx_uy = Rxx_y / length_t / Nx;
     
     % Поиск одномерного спектра для psi_x
     
@@ -61,10 +28,10 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, length_t, phi
     
     for i = 1:length(phi_range)
         for n = 0:Nx-1
-            phase_n = (n - (Nx-1)/2) ;
-            Vnm_x(n+1,1) = exp(1j * pi * phase_n * phi_range(i)/100  ); % Вектор направленности
+            phase_n = (n - (Nx - 1)/2) ;
+            Vnm_x(n+1,1) = exp(-1j * pi * (phase_n * sind(phi_range(i)) )); % Вектор направленности + (Ny - 1) / 2)
         end
-        BEAMscan_x(i) = Vnm_x' * Rxx_ux * Vnm_x; % Расчет спектра
+        BEAMscan_x(i) = real(Vnm_x' * Rxx_uy * Vnm_x); % Расчет спектра
     end
     
     % Поиск одномерного спектра для psi_y
@@ -72,18 +39,12 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, length_t, phi
     
     for j = 1:length(theta_range)
         for m = 0:Ny-1
-            phase_m = (m - (Ny-1)/2) ;
-            Vnm_y(m+1,1) = exp(1j * pi * phase_m * theta_range(j)/100); % Вектор направленности
+            phase_m = (m - (Ny - 1)/2) ;
+            Vnm_y(m+1,1) = exp(-1j * pi * (phase_m * sind(theta_range(j)) )); % Вектор направленности + (Ny - 1) / 2)
         end
-        BEAMscan_y(j) = Vnm_y' * Rxx_uy * Vnm_y; % Расчет спектра
+        BEAMscan_y(j) = real(Vnm_y' * Rxx_ux * Vnm_y); % Расчет спектра
     end
     
-    BEAMscan_xy = (BEAMscan_y) * (BEAMscan_x)';
-    % BEAMscan_xy = rot90(BEAMscan_xy);
-    
-     % BEAMscan_x = abs(BEAMscan_x) / max(abs(BEAMscan_x)); 
-     % BEAMscan_y = abs(BEAMscan_y) / max(abs(BEAMscan_y)); 
-     % BEAMscan_xy = abs(BEAMscan_xy) / max(abs(BEAMscan_xy(:)));
+    BEAMscan_xy = flip(BEAMscan_x) * (BEAMscan_y)';
 
 end
-

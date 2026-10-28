@@ -1,4 +1,4 @@
-function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_phi, Targets_theta, SNR)
+function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x, Targets_y)
     
     In = [  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
@@ -32,11 +32,16 @@ function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_ph
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
           ];
     
-    Freq = 10^6;
-    l = Freq / 2;
+
+    ux = sind(Targets_x);
+    uy = sind(Targets_y);
+    Nsnap = length(t);
+    
+
+    Signal = zeros(length(SignalFreq), Nsnap);
 
     for k = 1:length(SignalFreq) 
-        Signal(k) = Ampl(k) * exp(1j * 2 * pi * SignalFreq(k)); 
+        Signal(k,:) = Ampl(k) .* exp(1j * 2*pi * SignalFreq(k) .* t);
     end 
 
     %% График элементов матрицы In: если не ноль, ставим точку
@@ -58,16 +63,15 @@ function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_ph
     set(gca, 'XTick', 1:Nx, 'YTick', 1:Ny);
 
     V = zeros(Nx, Ny);
-    B = zeros(Nx, Ny);
+    B = complex(zeros(Ny, Nx, Nsnap));
     for k = 1:length(SignalFreq) 
         for j = 0:Nx-1    
             for i = 0:Ny-1
-                    V(i+1, j+1) = In(i+1,j+1) * exp(1j * (j - (Nx - 1) / 2) * Targets_phi(k) * pi ) * exp(1j * (i - (Ny - 1) / 2) * Targets_theta(k) * pi);
+                    V(i+1, j+1) = In(i+1,j+1) * exp(1j * (j - (Nx - 1) / 2) * ux(k) * pi ) * exp(1j * (i - (Ny - 1) / 2) * uy(k) * pi);
             end
         end
-        B = B + V(:,:).*Signal(k);
+        for q = 1:Nsnap
+            B(:,:,q) = B(:,:,q) + V(:,:) .* Signal(k,q);
+        end
     end 
-    
-    %noise = (randn(length(t), Nx * Ny) + 1j * randn(length(t), Nx * Ny)) * max(Ampl)* SNR;
-    
 end
