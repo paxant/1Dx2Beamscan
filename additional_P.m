@@ -21,12 +21,6 @@ function [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, t
         end
     end
     
-    % for i = 1:Number_of_targets
-    %     for j = 1:Number_of_targets  
-    %             P_cross_full = P_cross_full + rot90(( flip(DFx(:, j)) * DFy(:, i)' )).^2 ;
-    %     end
-    % end
-    % 
     if numel(t) == 1
         for i = 1:Number_of_targets
             for j = i+1:Number_of_targets

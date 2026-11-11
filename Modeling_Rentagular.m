@@ -1,4 +1,5 @@
-function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x, Targets_y)
+
+function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x, Targets_y, SNR)
     
     In = [  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
@@ -61,17 +62,40 @@ function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x,
     grid on;
     set(gca, 'XLim', [0 Nx+1], 'YLim', [0 Ny+1]);
     set(gca, 'XTick', 1:Nx, 'YTick', 1:Ny);
-
+    
     V = zeros(Nx, Ny);
     B = complex(zeros(Ny, Nx, Nsnap));
+
     for k = 1:length(SignalFreq) 
         for j = 0:Nx-1    
             for i = 0:Ny-1
-                    V(i+1, j+1) = In(i+1,j+1) * exp(1j * (j - (Nx - 1) / 2) * ux(k) * pi ) * exp(1j * (i - (Ny - 1) / 2) * uy(k) * pi);
+                V(i+1, j+1) = In(i+1,j+1) * exp(1j * (j - (Nx - 1) / 2) * ux(k) * pi ) * exp(1j * (i - (Ny - 1) / 2) * uy(k) * pi);
             end
         end
         for q = 1:Nsnap
             B(:,:,q) = B(:,:,q) + V(:,:) .* Signal(k,q);
         end
     end 
+
+    %% Добавление шума отдельно для каждого кадра
+
+    SNR_linear = 10^(SNR / 10);
+
+    for q = 1:Nsnap
+
+        % Мощность сигнала текущего кадра
+        Ps = mean(abs(B(:,:,q)).^2, 'all');
+
+        % Мощность шума
+        Pn = Ps / SNR_linear;
+
+        % Генерация независимого комплексного шума
+        Noise = sqrt(Pn/2) .* ...
+            (randn(Ny, Nx) + 1j*randn(Ny, Nx));
+
+        % Добавление шума к текущему кадру
+        B(:,:,q) = B(:,:,q) + Noise;
+
+    end
+
 end
