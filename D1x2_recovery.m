@@ -6,6 +6,8 @@ D1x2_to_1_snapshot = 0;
 D2_enable = 1;
 D1_enable = 1;
 
+PlotArrayEnable = 0;          %Рисовать элементы АР
+
 %% Параметры 
 
 Nx = 25; Ny = 25; % Размеры антенной решётки 
@@ -13,7 +15,7 @@ t = 0;%:0.001:0.01; % Временная шкала
 SignalFreq = [0 0]; % Частота сигнала (Гц) 
 
 Ampl = [1 1]; % Амплитуда 
-ro = 0;      %Коэффициент взаимной корреляции
+ro = 1;      %Коэффициент взаимной корреляции
 if ro == 0
     Ampl(2) = Ampl(2) * exp(1j * pi / 2);
 end
@@ -29,7 +31,7 @@ phi_range   = -30:0.5:30; % Угол φ, градусы
 
 %% Формирование матрицы направленности
 
-[B] = Modeling_Rentagular(SignalFreq,t,Ampl,Nx,Ny,Targets_x,Targets_y, SNR);
+[B] = Modeling_Rentagular(SignalFreq,t,Ampl,Nx,Ny,Targets_x,Targets_y, SNR, PlotArrayEnable);
 
 %% Расчёт одномерных ПС
 
@@ -37,31 +39,10 @@ if D1_enable
     [BEAMscan_x,BEAMscan_y,BEAMscan_xy] = Beam1D_F(Nx, Ny, B, t, phi_range, theta_range);
     
     BEAMscan_xy_Db = To_dB(BEAMscan_xy);
+    BEAMscan_xy_Db(BEAMscan_xy_Db < -60) = -60; 
     GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', '2x1D BEAMscan');
-    
-    figure;
-
-    % BEAMscan_x
-    subplot(2,1,1);
-    plot(phi_range, 20*log10(abs(BEAMscan_x) ./ max(abs(BEAMscan_x))), ...
-        'b', 'LineWidth', 1.5);
-    grid on;
-    xlabel('Угол \phi, ^\circ');
-    ylabel('Уровень, dB');
-    title('BEAMscan_x');
-    xlim([-30 30]);
-    ylim([-60 0]);
-    
-    % BEAMscan_y
-    subplot(2,1,2);
-    plot(theta_range, 20*log10(abs(BEAMscan_y) ./ max(abs(BEAMscan_y))), ...
-        'r', 'LineWidth', 1.5);
-    grid on;
-    xlabel('Угол \theta, ^\circ');
-    ylabel('Уровень, dB');
-    title('BEAMscan_y');
-    xlim([-30 30]);
-    ylim([-60 0]);
+        
+    %Plot_2xBeamScan1D(BEAMscan_x,BEAMscan_y, phi_range, theta_range);
 
 %% Формирование компенсации
     [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, length(Targets_x), ro);

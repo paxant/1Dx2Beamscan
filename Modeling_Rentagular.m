@@ -1,5 +1,5 @@
 
-function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x, Targets_y, SNR)
+function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x, Targets_y, SNR, PlotArrayEnable)
     
     In = [  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
@@ -46,22 +46,24 @@ function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x,
     end 
 
     %% График элементов матрицы In: если не ноль, ставим точку
-    figure;
-    hold on;
-    for i = 1:Ny
-        for j = 1:Nx
-            if In(i,j) ~= 0
-                plot(j, i, 'b.', 'MarkerSize', 15);
+    if PlotArrayEnable == 1
+        figure;
+        hold on;
+        for i = 1:Ny
+            for j = 1:Nx
+                if In(i,j) ~= 0
+                    plot(j, i, 'b.', 'MarkerSize', 15);
+                end
             end
         end
+        xlabel('Индекс по X (столбцы)');
+        ylabel('Индекс по Y (строки)');
+        title('Ненулевые элементы матрицы');
+        axis equal;
+        grid on;
+        set(gca, 'XLim', [0 Nx+1], 'YLim', [0 Ny+1]);
+        set(gca, 'XTick', 1:Nx, 'YTick', 1:Ny);
     end
-    xlabel('Индекс по X (столбцы)');
-    ylabel('Индекс по Y (строки)');
-    title('Ненулевые элементы матрицы');
-    axis equal;
-    grid on;
-    set(gca, 'XLim', [0 Nx+1], 'YLim', [0 Ny+1]);
-    set(gca, 'XTick', 1:Nx, 'YTick', 1:Ny);
     
     V = zeros(Nx, Ny);
     B = complex(zeros(Ny, Nx, Nsnap));
