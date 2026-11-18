@@ -1,4 +1,4 @@
-function [] = GraficFunc(theta_range,phi_range, Matrix, xlable_Name, ylabel_Name, title_Name)
+function [] = GraficFunc(phi_range, theta_range, Matrix, xlable_Name, ylabel_Name, title_Name)
     % Визуализация спектра по угловым координатам
     figure;
     imagesc(phi_range, theta_range, Matrix);

@@ -20,8 +20,8 @@ if ro == 0
     Ampl(2) = Ampl(2) * exp(1j * pi / 2);
 end
 
-Targets_x = [5, -7];         %Угол тета
-Targets_y = [10, -14];       %Угол фи
+Targets_x = [5, -7];         %Угол φ
+Targets_y = [10, -14];       %Угол θ
 SNR = 10000;
 
 theta_range = -30:0.5:30; % Угол θ, градусы 
@@ -40,16 +40,16 @@ if D1_enable
     
     BEAMscan_xy_Db = To_dB(BEAMscan_xy);
     BEAMscan_xy_Db(BEAMscan_xy_Db < -60) = -60; 
-    GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', '2x1D BEAMscan');
+    GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \phi , ^\circ', 'Угол \theta ^\circ', '2x1D BEAMscan');
         
-    %Plot_2xBeamScan1D(BEAMscan_x,BEAMscan_y, phi_range, theta_range);
+    Plot_2xBeamScan1D(BEAMscan_x,BEAMscan_y, phi_range, theta_range);
 
 %% Формирование компенсации
     [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, length(Targets_x), ro);
 %% Вычисоение компенсации
 
     BEAMscan_xy_Db = To_dB(abs(BEAMscan_xy) - abs(P_cross));
-    GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', 'ПС с восстановленной структурой');
+    GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \phi , ^\circ', 'Угол \theta ^\circ', 'ПС с восстановленной структурой');
 end
 
 %% Расчет двумерного ПС проверки
@@ -57,5 +57,5 @@ if D2_enable
     [BEAMscan_2D] = Beam2D_F(B,phi_range, theta_range, Ny, Nx);
     
     BEAMscan_xy_Db = To_dB(BEAMscan_2D);
-    GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', '2D BEAMscan');
+    GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \phi , ^\circ', 'Угол \theta ^\circ', '2D BEAMscan');
 end 

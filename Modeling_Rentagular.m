@@ -64,8 +64,8 @@ function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x,
         set(gca, 'XLim', [0 Nx+1], 'YLim', [0 Ny+1]);
         set(gca, 'XTick', 1:Nx, 'YTick', 1:Ny);
     end
-    
-    V = zeros(Nx, Ny);
+
+    V = zeros(Ny, Nx);
     B = complex(zeros(Ny, Nx, Nsnap));
 
     for k = 1:length(SignalFreq) 
