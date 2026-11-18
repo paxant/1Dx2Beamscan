@@ -14,13 +14,17 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, t, phi_range,
         end
     
         for i = 1:Ny
-            A = rot90(B(i, :, q));
+            A(: ,1) = B(i, :, q); 
+            %Убран поворот матрицы
             Rxx_x = Rxx_x + ( A * A' );
         end
     end
     
+    % Это лучше не трогать. Отсутсвие нормировки приведет к неправильной
+    % компенсации из-за различия в амплитудах
     Rxx_ux = Rxx_x / length_t / Ny; % Нормализация по количеству временных отсчетов
     Rxx_uy = Rxx_y / length_t / Nx;
+
     
     % Поиск одномерного спектра для psi_x
     
@@ -29,9 +33,9 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, t, phi_range,
     for i = 1:length(phi_range)
         for n = 0:Nx-1
             phase_n = (n - (Nx - 1)/2) ;
-            Vnm_x(n+1,1) = exp(-1j * pi * (phase_n * sind(phi_range(i)) )); % Вектор направленности + (Ny - 1) / 2)
+            Vnm_x(n+1,1) = exp(1j * pi * (phase_n * sind(phi_range(i)) )); % Вектор направленности + (Ny - 1) / 2)
         end
-        BEAMscan_x(i) = real(Vnm_x' * Rxx_uy * Vnm_x); % Расчет спектра
+        BEAMscan_x(i) = Vnm_x' * Rxx_uy * Vnm_x; % Расчет спектра
     end
     
     % Поиск одномерного спектра для psi_y
@@ -40,11 +44,11 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, t, phi_range,
     for j = 1:length(theta_range)
         for m = 0:Ny-1
             phase_m = (m - (Ny - 1)/2) ;
-            Vnm_y(m+1,1) = exp(-1j * pi * (phase_m * sind(theta_range(j)) )); % Вектор направленности + (Ny - 1) / 2)
+            Vnm_y(m+1,1) = exp(1j * pi * (phase_m * sind(theta_range(j)) )); % Вектор направленности + (Ny - 1) / 2)
         end
-        BEAMscan_y(j) = real(Vnm_y' * Rxx_ux * Vnm_y); % Расчет спектра
+        BEAMscan_y(j) = Vnm_y' * Rxx_ux * Vnm_y; % Расчет спектра
     end
     
-    BEAMscan_xy = flip(BEAMscan_x) * (BEAMscan_y)';
+    BEAMscan_xy = (BEAMscan_x) * (BEAMscan_y)'; %убрал теперь не нужный флип
 
 end
