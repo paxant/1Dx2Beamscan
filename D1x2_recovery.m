@@ -10,13 +10,17 @@ D1_enable = 1;
 
 Nx = 25; Ny = 25; % Размеры антенной решётки 
 t = 0;%:0.001:0.01; % Временная шкала 
-SignalFreq = [20 130]; % Частота сигнала (Гц) 
+SignalFreq = [0 0]; % Частота сигнала (Гц) 
+
 Ampl = [1 1]; % Амплитуда 
+ro = 0;      %Коэффициент взаимной корреляции
+if ro == 0
+    Ampl(2) = Ampl(2) * exp(1j * pi / 2);
+end
 
-Targets_x = [18.546, -11.65];
-Targets_y = [-15.67, 15.76];
-
-SNR = 10;
+Targets_x = [5, -7];         %Угол тета
+Targets_y = [10, -14];       %Угол фи
+SNR = 10000;
 
 theta_range = -30:0.5:30; % Угол θ, градусы 
 phi_range   = -30:0.5:30; % Угол φ, градусы 
@@ -60,11 +64,7 @@ if D1_enable
     ylim([-60 0]);
 
 %% Формирование компенсации
-    if D1x2_to_1_snapshot
-        [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, length(Targets_x), 1);
-    else
-        [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, length(Targets_x), t);
-    end
+    [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, length(Targets_x), ro);
 %% Вычисоение компенсации
 
     BEAMscan_xy_Db = To_dB(abs(BEAMscan_xy) - abs(P_cross));

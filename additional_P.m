@@ -1,4 +1,4 @@
-function [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, Number_of_targets, t)
+function [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, theta_range, Nx, Ny, Number_of_targets, ro)
     
     P_cross_full = zeros(numel(theta_range), numel(phi_range));
     P_cross = zeros(numel(theta_range), numel(phi_range));
@@ -21,7 +21,7 @@ function [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, t
         end
     end
     
-    if numel(t) == 1
+    if ro == 1
         for i = 1:Number_of_targets
             for j = i+1:Number_of_targets
     
