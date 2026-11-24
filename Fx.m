@@ -4,7 +4,7 @@ function [V_x] = Fx(phi_range, shift_phi, Number_x, Number_y)
     %A = ( Number_y - 1 ) / 2;
     for i = 1:length(phi_range)
         % Преобразование углов в пространственные координаты
-        u_x = sind(phi_range(i)) - sind(shift_phi); 
+        u_x = sind(phi_range(i)) - sind(shift_phi); %Поменял знак с + на - перед sind. Теперь ГЛ ДН имеет правильную ориентацию
         sum_value = 0; % Инициализация суммы
         for n = 0:Number_x-1
             phase_n = (n - ( Number_x -1 ) / 2);
