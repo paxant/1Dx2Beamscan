@@ -1,1 +1,1 @@
-# 1Dx2Beamscan
+# 1Dx2Beamscan драйвер Linux
