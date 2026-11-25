@@ -12,11 +12,11 @@ function [V_y] = Fy(theta_range, shift_theta, Number_x, Number_y)
            
             sum_value = sum_value + exp(1j * pi * (phase_m * u_y));
         end
-        %V_y(1, j) = (sum_value); 
+        V_y(1, j) = (sum_value); 
         % Если бы в матлабе данные хранились нормально, как во всех остальных программах, то при повороте
         % матриц не приходилось бы использовать flip(). Этот костыль
         % устраняет несостыковку при повороте вектора через " ' "
-        V_y(1, length(theta_range) - j+1) = (sum_value); 
+        %V_y(1, length(theta_range) - j+1) = (sum_value); 
     end
 
 end

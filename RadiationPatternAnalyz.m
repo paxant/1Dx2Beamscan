@@ -1,6 +1,7 @@
 %% Программа построения ДПС и МПС по диаграммам направленности
-PlotOPSenable = 0;
+PlotOPSenable = 1;
 PlotDPSenable = 1;
+BEAMscan_xy_compensation = 1;
 %Диаграммы
 Fx1 = Ampl(1) * Fx( (phi_range), (Targets_x(1)), Nx, Ny ) ;
 Fx2 = Ampl(2) * Fx( (phi_range), (Targets_x(2)), Nx, Ny ) ;
@@ -31,13 +32,14 @@ end
 
 DPS = (Fy1' * Fx1).^2 + (Fy2' * Fx2).^2 + 2 * (Fy1' * Fx1) .* (Fy2' * Fx2) * ro;
 
+
 %Нормировка 
 DPSn = DPS / max(max(abs(DPS)));
 %ДПС в дБ
 DPSn_dB = 10 * log10(abs(DPSn));
 DPSn_dB(DPSn_dB < -60) = -60; 
 if PlotDPSenable == 1
-    GraficFunc(phi_range,theta_range, DPSn_dB, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', 'RadiationPatterns');
+    GraficFunc(phi_range,theta_range, DPSn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns');
 end
 
 %% МПС (совокупность двух одномерных)
@@ -48,24 +50,22 @@ MPSn = MPS / max(max(abs(MPS)));
 %МПС в дБ
 MPSn_dB = 10 * log10(abs(MPSn));
 MPSn_dB(MPSn_dB < -60) = -60; 
-GraficFunc(phi_range,theta_range, MPSn_dB, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', 'RadiationPatterns MPS');
+GraficFunc(phi_range,theta_range, MPSn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS');
 
 %% Компенсация
 Comp = (abs(Fy1)'.^2 * abs(Fx2).^2) + (abs(Fy2)'.^2 * abs(Fx1).^2) - 2 * (Fy1' * Fx1) .* (Fy2' * Fx2) * ro;
 
-%Такая запись компенсации дает 2D спектр
-%Comp = (abs(Fy1)'.^2 * abs(Fx2).^2) + (abs(Fy2)'.^2 * abs(Fx1).^2) - 2 * (Fy1' * Fx1) .* (Fy2' * Fx2) * ro;
-
-
 %Компенсация искажений. MPS_c = DPS. 
-MPS_c = MPS - Comp;
-%MPS_c = Comp;
-%MPS_c = MPS - (Comp).';
+if ~BEAMscan_xy_compensation
+    MPS_c = MPS - Comp;
+else
+    MPS_c = BEAMscan_xy - (Comp);
+end
 %Нормировка
 MPS_cn = MPS_c / max(max(abs(MPS_c)));
 MPS_cn_dB = 10 * log10(abs(MPS_cn));
 MPS_cn_dB(MPS_cn_dB < -60) = -60; 
-GraficFunc(phi_range,theta_range, MPS_cn_dB, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', 'RadiationPatterns MPS_c');
+GraficFunc(phi_range,theta_range, MPS_cn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS_c');
 
 %Дополнительное подавление боковых лепестков
 Comp2 = 2 * (abs(Fy1)' * abs(Fx1)) .* (abs(Fy2)' * abs(Fx2)) * abs(ro);
@@ -77,4 +77,4 @@ MPS_c2 = MPS_c - Comp2;
 MPS_c2n = MPS_c2 / max(max(abs(MPS_c2)));
 MPS_c2n_dB = 10 * log10(abs(MPS_c2n));
 MPS_c2n_dB(MPS_c2n_dB < -60) = -60; 
-GraficFunc(phi_range,theta_range, MPS_c2n_dB, 'Угол \theta ^\circ', 'Угол \phi , ^\circ', 'RadiationPatterns MPS_c_2');
+GraficFunc(phi_range,theta_range, MPS_c2n_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS_c_2');

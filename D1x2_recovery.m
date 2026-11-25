@@ -3,7 +3,7 @@ clear all; clc; close all;
 %% Параметры для проверки результата
 
 D1x2_to_1_snapshot = 0;
-D2_enable = 0;
+D2_enable = 1;
 D1_enable = 1;
 
 PlotArrayEnable = 0;          %Рисовать элементы АР
@@ -29,7 +29,7 @@ Targets_y = [-15.67, 15.76];
 SNR = 10000;
 
 theta_range = -30:0.5:30; % Угол θ, градусы 
-phi_range   = -30:0.5:30; % Угол φ, градусы 
+phi_range   = -30:0.25:30; % Угол φ, градусы 
 
 %% Координаты прихода сигнала
 
@@ -53,6 +53,7 @@ if D1_enable
 %% Вычисоение компенсации
 
     BEAMscan_xy_Db = To_dB(abs(BEAMscan_xy) - abs(P_cross));
+    %BEAMscan_xy_Db = To_dB(abs(P_cross));
     GraficFunc(phi_range,theta_range, BEAMscan_xy_Db, 'Угол \phi , ^\circ', 'Угол \theta ^\circ', 'ПС с восстановленной структурой');
 end
 
