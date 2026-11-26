@@ -1,6 +1,6 @@
 %% Программа построения ДПС и МПС по диаграммам направленности
-PlotOPSenable = 1;
-PlotDPSenable = 1;
+PlotOPSenable = 1;    %Рисовать ОПС, рассчитанные на основе ДН
+PlotDPSenable = 0;    %Рисовать ДПС, рассчитанный на основе ДН
 BEAMscan_xy_compensation = 1;
 %Диаграммы
 Fx1 = Ampl(1) * Fx( (phi_range), (Targets_x(1)), Nx, Ny ) ;
@@ -11,20 +11,28 @@ Fy2 = Ampl(2) * Fy( (theta_range), (Targets_y(2)), Nx, Ny ) ;
 %% Одномерные пространственные спектры
 if PlotOPSenable == 1
     Fx12 = abs(Fx1).^2 + abs(Fx2).^2; 
-    Fy12 = abs(Fy1).^2 + abs(Fy2).^2; 
+    Fy12 = abs(Fy1).^2 + abs(Fy2).^2;
     
-    Fx12 = Fx12.^1;% - 2 * abs(Fx1) .* abs(Fx2);
-    Fy12 = Fy12.^1;% - 2 * abs(Fy1) .* abs(Fy2);
+    Fx12 = Fx12.^1;
+    Fy12 = Fy12.^1;
+
+%    Fx12 = abs(Fx1).^1 + abs(Fx2).^1;% - 1 * abs(Fx1) .* abs(Fx2) * ro; 
+%    Fy12 = abs(Fy1).^1 + abs(Fy2).^1;% - 1 * abs(Fy1) .* abs(Fy2) * ro; 
     
+%    Fx12 = Fx12.^2 - 2 * abs(Fx1) .* abs(Fx2) * ro;
+%    Fy12 = Fy12.^2 - 2 * abs(Fy1) .* abs(Fy2) * ro;    
+
     Fx_dB = 10 * log10(abs(Fx12) / max(max(abs(Fx12))));
     Fy_dB = 10 * log10(abs(Fy12) / max(max(abs(Fy12))));
     
     figure
     plot(phi_range, Fx_dB, phi_range, 10*log10(abs(BEAMscan_x) ./ max(abs(BEAMscan_x))));
     grid on;
+    xlabel('\phi'); ylabel('Fx12');
     figure
     plot(theta_range, Fy_dB, theta_range, 10*log10(abs(BEAMscan_y) ./ max(abs(BEAMscan_y))))
     grid on;
+    xlabel('\theta');  ylabel('Fy12');
 end
 
 

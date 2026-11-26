@@ -10,20 +10,17 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F_mod(Nx,Ny, B, t, phi_ra
     for q = 1:length_t
         for j = 1:Nx
             A = B(:, j, q);
-            A = B(:, 3, q);
             Rxx_y = Rxx_y + A;
         end
     
         for i = 1:Ny
-            %A = rot90(B(i, :, q));
             A(:, 1) = B(i, :, q);
-            A(:, 1) = B(3, :, q);
             Rxx_x = Rxx_x + A;
         end
     end
     
-    Rxx_ux = Rxx_x;% / length_t / Ny; % Нормализация по количеству временных отсчетов
-    Rxx_uy = Rxx_y;% / length_t / Nx;
+    Rxx_ux = Rxx_x / length_t / Ny; % Нормализация по количеству временных отсчетов
+    Rxx_uy = Rxx_y / length_t / Nx;
     
     %% Поиск одномерного спектра для psi_x
     
@@ -34,8 +31,7 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F_mod(Nx,Ny, B, t, phi_ra
             phase_n = (n - (Nx - 1)/2) ;
             Vnm_x(n+1,i) = exp(1j * pi * (phase_n * sind(phi_range(i)) )); % Вектор направленности + (Ny - 1) / 2)
         end
-        %Не понятно, зачем брать действительную часть?
-        %BEAMscan_x(i) = (Vnm_x(:, i)' * Rxx_uy).^2; % Расчет спектра
+
         for j = 1:Nx
             A = B(:, j, q);
             BEAMscan_x(i) = BEAMscan_x(i) + abs(Vnm_x(:, i)' * A).^1; % Расчет спектра
@@ -51,8 +47,7 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F_mod(Nx,Ny, B, t, phi_ra
             phase_m = (m - (Ny - 1)/2) ;
             Vnm_y(m+1,j) = exp(1j * pi * (phase_m * sind(theta_range(j)) )); % Вектор направленности + (Ny - 1) / 2)
         end
-        %Не понятно, зачем брать действительную часть?
-        %BEAMscan_y(j) = (Vnm_y(:, j)' * Rxx_ux).^2; % Расчет спектра
+
         for i = 1:Nx
             A(:, 1) = B(i, :, q);
             BEAMscan_y(j) = BEAMscan_y(j) + abs(Vnm_x(:, j)' * A).^1; % Расчет спектра
