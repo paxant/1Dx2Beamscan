@@ -32,7 +32,10 @@ function [B, Vx, Vy] = Modeling_Rentagular(SignalFreq,t,Ampl, Nx, Ny, Targets_x,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1;
           ];
-    
+if (Nx > 30) | (Ny > 30)
+    %Для случая очень больших решеток
+    In = ones(Nx, Ny);
+end
 
     ux = sind(Targets_x);
     uy = sind(Targets_y);
