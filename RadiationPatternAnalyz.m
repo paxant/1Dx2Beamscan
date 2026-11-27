@@ -1,15 +1,19 @@
 %% Программа построения ДПС и МПС по диаграммам направленности
-PlotOPSenable = 1;    %Рисовать ОПС, рассчитанные на основе ДН
-PlotDPSenable = 0;    %Рисовать ДПС, рассчитанный на основе ДН
-BEAMscan_xy_compensation = 1;
+PlotOPSEnable = 0;    %Рисовать ОПС, рассчитанные на основе ДН
+PlotDPSEnable = 0;    %Рисовать ДПС, рассчитанный на основе ДН
+PlotMPSEnable = 0;    %Рисовать МПС
+PlotMPS_Comp_Enable = 0;    %Рисовать МПС с компенсацией
+PlotMPS_Comp2Enable = 0;    %Рисовать МПС со второй компенсацией
+BEAMscan_xy_compensation = 0;
 %Диаграммы
+Ampl = abs(Ampl);
 Fx1 = Ampl(1) * Fx( (phi_range), (Targets_x(1)), Nx, Ny ) ;
 Fx2 = Ampl(2) * Fx( (phi_range), (Targets_x(2)), Nx, Ny ) ;
 Fy1 = Ampl(1) * Fy( (theta_range), (Targets_y(1)), Nx, Ny ) ;
 Fy2 = Ampl(2) * Fy( (theta_range), (Targets_y(2)), Nx, Ny ) ;
 
 %% Одномерные пространственные спектры
-if PlotOPSenable == 1
+if PlotOPSEnable == 1
     Fx12 = abs(Fx1).^2 + abs(Fx2).^2; 
     Fy12 = abs(Fy1).^2 + abs(Fy2).^2;
     
@@ -28,11 +32,11 @@ if PlotOPSenable == 1
     figure
     plot(phi_range, Fx_dB, phi_range, 10*log10(abs(BEAMscan_x) ./ max(abs(BEAMscan_x))));
     grid on;
-    xlabel('\phi'); ylabel('Fx12');
+    xlabel('\phi'); ylabel('Fx12'); ylim([-25 0]); title("ОПС по азимуту"); legend('DNA', 'OPS');
     figure
     plot(theta_range, Fy_dB, theta_range, 10*log10(abs(BEAMscan_y) ./ max(abs(BEAMscan_y))))
     grid on;
-    xlabel('\theta');  ylabel('Fy12');
+    xlabel('\theta');  ylabel('Fy12'); ylim([-25 0]); title("ОПС по углу места"); legend('DNA', 'OPS');
 end
 
 
@@ -40,15 +44,13 @@ end
 
 DPS = (Fy1' * Fx1).^2 + (Fy2' * Fx2).^2 + 2 * (Fy1' * Fx1) .* (Fy2' * Fx2) * ro;
 
-
 %Нормировка 
 DPSn = DPS / max(max(abs(DPS)));
 %ДПС в дБ
 DPSn_dB = 10 * log10(abs(DPSn));
 DPSn_dB(DPSn_dB < -60) = -60; 
-if PlotDPSenable == 1
-    GraficFunc(phi_range,theta_range, DPSn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns');
-end
+GraficFunc(phi_range,theta_range, DPSn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns', PlotDPSEnable);
+
 
 %% МПС (совокупность двух одномерных)
 MPS = (abs(Fy1).^2 + abs(Fy2).^2)'  * (abs(Fx1).^2 + abs(Fx2).^2);
@@ -58,7 +60,8 @@ MPSn = MPS / max(max(abs(MPS)));
 %МПС в дБ
 MPSn_dB = 10 * log10(abs(MPSn));
 MPSn_dB(MPSn_dB < -60) = -60; 
-GraficFunc(phi_range,theta_range, MPSn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS');
+GraficFunc(phi_range,theta_range, MPSn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS', PlotMPSEnable);
+
 
 %% Компенсация
 Comp = (abs(Fy1)'.^2 * abs(Fx2).^2) + (abs(Fy2)'.^2 * abs(Fx1).^2) - 2 * (Fy1' * Fx1) .* (Fy2' * Fx2) * ro;
@@ -73,7 +76,8 @@ end
 MPS_cn = MPS_c / max(max(abs(MPS_c)));
 MPS_cn_dB = 10 * log10(abs(MPS_cn));
 MPS_cn_dB(MPS_cn_dB < -60) = -60; 
-GraficFunc(phi_range,theta_range, MPS_cn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS_c');
+GraficFunc(phi_range,theta_range, MPS_cn_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS_c', PlotMPS_Comp_Enable);
+
 
 %Дополнительное подавление боковых лепестков
 Comp2 = 2 * (abs(Fy1)' * abs(Fx1)) .* (abs(Fy2)' * abs(Fx2)) * abs(ro);
@@ -85,4 +89,4 @@ MPS_c2 = MPS_c - Comp2;
 MPS_c2n = MPS_c2 / max(max(abs(MPS_c2)));
 MPS_c2n_dB = 10 * log10(abs(MPS_c2n));
 MPS_c2n_dB(MPS_c2n_dB < -60) = -60; 
-GraficFunc(phi_range,theta_range, MPS_c2n_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS_c_2');
+GraficFunc(phi_range,theta_range, MPS_c2n_dB, 'Угол \phi , ^\circ', 'Угол \theta, ^\circ', 'RadiationPatterns MPS_c_2', PlotMPS_Comp2Enable);

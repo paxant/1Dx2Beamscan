@@ -10,11 +10,13 @@ function [BEAMscan_x,BEAMscan_y, BEAMscan_xy] = Beam1D_F(Nx,Ny, B, t, phi_range,
     for q = 1:length_t
         for j = 1:Nx
             A = B(:, j, q);
+            %A = B(:, 4, q);    %В этом случае строит спектр по одной строке (столбцу)
             C_y = C_y + ( A * A' )';
         end
     
         for i = 1:Ny
             A = rot90(flip(B(i, :, q))); % прошлая конструкция не работала при разных Ny и Nx
+            %A = rot90(flip(B(4, :, q))); % в этом случае строит спектр по одной строке (столбцу)
             %Убран поворот матрицы
             C_x = C_x + ( A * A' );
         end
