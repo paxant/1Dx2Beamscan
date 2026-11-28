@@ -35,7 +35,7 @@ function [P_cross,P_cross_full] = additional_P(Targets_x,Targets_y, phi_range, t
     
 
     if ro > 0
-        %Поправка на факторы Дирихле в 1D-спектрах
+        %Попытка добавить ещё один множитель для компенсации искажений при ro > 0
         P_cross_x = zeros(1, numel(phi_range));
         P_cross_y = zeros(1, numel(theta_range));
         dCx = zeros(1, numel(phi_range));
